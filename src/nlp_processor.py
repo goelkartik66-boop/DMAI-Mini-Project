@@ -45,9 +45,6 @@ def process_question(question):
         return None
 
     if re.search(r"\b(attendance|present|absent)\b", question):
-        if not re.search(r"\b(attendance|present|absent)\b", question):
-            return None
-
         attendance_match = re.search(
             r"\b(below|under|less than|lower than|above|over|greater than|more than|higher than|at least|at most|equal to|exactly)\s+(\d+(?:\.\d+)?)\s*%?",
             question
@@ -83,8 +80,7 @@ def process_question(question):
     conditions = []
 
     if city_match:
-        city = CITIES[city_match.group(1)]
-        conditions.append(f"City = '{city}'")
+        conditions.append(f"City = '{CITIES[city_match.group(1)]}'")
 
     if department_match:
         conditions.append(f"Department = '{department_match.group(1).upper()}'")
@@ -107,7 +103,7 @@ def process_question(question):
             question
         )
 
-        if marks_match and re.search(r"\b(mark|marks|score|scores|scored|scoring|grade)\b", question) or re.search(r"\b(below|under|less than|lower than|above|over|greater than|more than|at least|at most)\s+\d+", question):
+        if marks_match:
             phrase = marks_match.group(1)
             value = float(marks_match.group(2))
 
@@ -126,8 +122,7 @@ def process_question(question):
 
     if re.search(r"\b(class|overall)\s+average\b|\baverage\s+marks\s+of\s+(?:the\s+)?class\b", question):
         if re.search(r"\b(exceed|exceeds|exceeding|above|higher than|greater than|more than)\b", question):
-            sql = "SELECT * FROM Students WHERE Marks > (SELECT AVG(Marks) FROM Students)"
-            return sql
+            return "SELECT * FROM Students WHERE Marks > (SELECT AVG(Marks) FROM Students)"
 
     if re.search(r"\b(which|what)\s+department\b", question) and re.search(r"\b(highest|maximum|best|top)\b", question) and re.search(r"\baverage\b", question):
         return "SELECT Department, AVG(Marks) AS average_marks FROM Students GROUP BY Department ORDER BY average_marks DESC LIMIT 1"
@@ -194,10 +189,10 @@ def process_question(question):
         return sql + " ORDER BY " + order_by
 
     if re.search(r"\b(student|students|class|records|people|who|which)\b", question):
-        if not re.search(r"\b(show|list|find|display|get|give|tell|all|student|students|who|which)\b", question):
+        if not re.search(r"\b(show|list|find|display|get|give|tell|all|student|students|who|which)\b", question) and not conditions:
             return None
 
-        if re.search(r"\bfrom\b", question) and not city_match and not department_match:        
+        if re.search(r"\bfrom\b", question) and not city_match and not department_match:
             return None
 
         sql = "SELECT * FROM Students"
@@ -205,5 +200,7 @@ def process_question(question):
             sql += " WHERE " + " AND ".join(conditions)
         return sql
 
-    return None
+    if conditions:
+        return "SELECT * FROM Students WHERE " + " AND ".join(conditions)
 
+    return None
