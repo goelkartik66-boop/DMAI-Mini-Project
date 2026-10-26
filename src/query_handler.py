@@ -2,9 +2,7 @@
 from src.nlp_processor import process_question
 from src.db import get_connection
 
-
 ALLOWED_START = "SELECT "
-
 
 def handle_question(question):
     sql_query = process_question(question)
@@ -33,8 +31,9 @@ def handle_question(question):
 
         return sql_query, columns, rows
 
-    except Exception:
-        return sql_query, None, "The database could not complete this query. Please try a different question."
+    except Exception as e:
+        print(f"Database error: {type(e).__name__}: {e}", flush=True)
+        return sql_query, None, "The database could not complete this query. Please check the application logs."
 
     finally:
         if cursor is not None:
@@ -42,4 +41,3 @@ def handle_question(question):
 
         if connection is not None:
             connection.close()
-
